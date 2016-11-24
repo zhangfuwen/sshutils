@@ -19,6 +19,12 @@ func NewHost(ip, user, pass string) Host {
 	}
 }
 
+func NewHostWithPort(ip, port, user, pass string) Host {
+	return Host {
+		ip,port,user,pass,nil,
+	}
+}
+
 func (h *Host) dial() error {
 	var err error
 	h.client, err = ssh.Dial("tcp", h.IP+":"+h.Port, &ssh.ClientConfig{
