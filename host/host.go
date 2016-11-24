@@ -6,17 +6,24 @@ import (
 )
 
 type Host struct {
-	IPAndPort string
+	IP       string
+	Port     string
 	UserName string
 	Password string
-	client ssh.Client
+	client   *ssh.Client
 }
 
-func (h * Host)dial() error {
+func NewHost(ip, user, pass string) Host {
+	return Host{
+		ip, "22", user, pass, nil,
+	}
+}
+
+func (h *Host) dial() error {
 	var err error
-	h.client, err = ssh.Dial("ipv4",h.IPAndPort, &ssh.ClientConfig{
-		User:h.UserName,
-		Auth:[]ssh.AuthMethod{
+	h.client, err = ssh.Dial("tcp", h.IP+":"+h.Port, &ssh.ClientConfig{
+		User: h.UserName,
+		Auth: []ssh.AuthMethod{
 			ssh.Password(h.Password),
 		},
 	})
@@ -24,31 +31,31 @@ func (h * Host)dial() error {
 }
 
 func (h *Host) Get(remotePath, localDir string) error {
-	if(h.client==nil) {
-		if err :=h.dial(); err!=nil {
+	if h.client == nil {
+		if err := h.dial(); err != nil {
 			return err
 		}
 	}
-	return scp.CopyRemoteFileToLocalPath(remotePath,localDir,h.client)
+	return scp.CopyRemoteFileToLocalPath(remotePath, localDir, h.client)
 }
 
-func (h * Host)Put(localPath, remoteDir string) error {
-	if(h.client==nil) {
-		if err :=h.dial(); err!=nil {
+func (h *Host) Put(localPath, remoteDir string) error {
+	if h.client == nil {
+		if err := h.dial(); err != nil {
 			return err
 		}
 	}
-	return scp.CopyLocalFileToRemotePath(localPath,remoteDir,h.client)
+	return scp.CopyLocalFileToRemotePath(localPath, remoteDir, h.client)
 }
 
-func (h * Host)Run(cmd string) error {
-	if(h.client==nil) {
-		if err :=h.dial(); err!=nil {
+func (h *Host) Run(cmd string) error {
+	if h.client == nil {
+		if err := h.dial(); err != nil {
 			return err
 		}
 	}
 	session, err := h.client.NewSession()
-	if err!= nil {
+	if err != nil {
 		return err
 	}
 	defer session.Close()
@@ -56,27 +63,27 @@ func (h * Host)Run(cmd string) error {
 	return nil
 }
 
-func (h * Host)Output(cmd string) (string,error) {
-	if(h.client==nil) {
-		if err :=h.dial(); err!=nil {
-			return "",err
+func (h *Host) Output(cmd string) (string, error) {
+	if h.client == nil {
+		if err := h.dial(); err != nil {
+			return "", err
 		}
 	}
 	session, err := h.client.NewSession()
-	if err!= nil {
-		return "",err
+	if err != nil {
+		return "", err
 	}
 	defer session.Close()
-	bs, err:= session.Output(cmd)
-	if err!=nil {
-		return "",err
+	bs, err := session.Output(cmd)
+	if err != nil {
+		return "", err
 	}
-	return string(bs),nil
+	return string(bs), nil
 }
-func (h *Host) Send(cmd string , expect string ) {
-	
+func (h *Host) Send(cmd string, expect string) {
+
 }
 func (h *Host) Disconnect() {
 	h.client.Close()
-	h.client=nil
+	h.client = nil
 }
