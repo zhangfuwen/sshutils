@@ -65,8 +65,7 @@ func (h *Host) Run(cmd string) error {
 		return err
 	}
 	defer session.Close()
-	session.Run(cmd)
-	return nil
+	return session.Run(cmd)
 }
 
 func (h *Host) Output(cmd string) (string, error) {
