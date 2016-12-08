@@ -3,6 +3,7 @@ package host
 import (
 	"github.com/zhangfuwen/sshutils/scp"
 	"golang.org/x/crypto/ssh"
+	"io"
 )
 
 type Host struct {
@@ -66,6 +67,31 @@ func (h *Host) Run(cmd string) error {
 	}
 	defer session.Close()
 	return session.Run(cmd)
+}
+
+func (h *Host) Tail(fileName string) (io.ReadCloser, error) {
+	if h.client == nil {
+		if err := h.dial(); err != nil {
+			return nil,err
+		}
+	}
+	session, err := h.client.NewSession()
+	if err != nil {
+		return nil, err
+	}
+	type readCloser struct {
+		io.Reader
+		io.Closer
+	}
+	if err:= session.Start("tail -f "+fileName);err!=nil {
+		return nil,err
+	}
+	if reader ,err := session.StdoutPipe(); err!=nil {
+		return nil, err
+	}else {
+		var rc = readCloser{ reader, session }
+		return rc,nil
+	}
 }
 
 func (h *Host) Output(cmd string) (string, error) {
