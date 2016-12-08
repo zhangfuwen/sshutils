@@ -69,13 +69,16 @@ func (h *Host) Run(cmd string) error {
 	return session.Run(cmd)
 }
 
-func (h *Host) Tail(fileName string) (io.ReadCloser, error) {
-	if h.client == nil {
-		if err := h.dial(); err != nil {
-			return nil,err
-		}
-	}
-	session, err := h.client.NewSession()
+func (h *Host) Tailf(fileName string) (io.ReadCloser, error) {
+	//dial a now client for this
+	client, err := ssh.Dial("tcp", h.IP+":"+h.Port, &ssh.ClientConfig{
+		User: h.UserName,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(h.Password),
+		},
+	})
+
+	session, err := client.NewSession()
 	if err != nil {
 		return nil, err
 	}
