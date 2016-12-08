@@ -70,13 +70,16 @@ func (h *Host) Run(cmd string) error {
 }
 
 func (h *Host) Tailf(fileName string) (io.ReadCloser, error) {
-	//dial a now client for this
+	//dial a new client for this
 	client, err := ssh.Dial("tcp", h.IP+":"+h.Port, &ssh.ClientConfig{
 		User: h.UserName,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(h.Password),
 		},
 	})
+	if err!=nil {
+		return nil,err
+	}
 
 	session, err := client.NewSession()
 	if err != nil {
@@ -86,15 +89,17 @@ func (h *Host) Tailf(fileName string) (io.ReadCloser, error) {
 		io.Reader
 		io.Closer
 	}
+
+	reader ,err := session.StdoutPipe();
+	if err!=nil {
+		return nil, err
+	}
+	var rc = readCloser{ reader, session }
 	if err:= session.Start("tail -f "+fileName);err!=nil {
+		rc.Close()
 		return nil,err
 	}
-	if reader ,err := session.StdoutPipe(); err!=nil {
-		return nil, err
-	}else {
-		var rc = readCloser{ reader, session }
-		return rc,nil
-	}
+	return rc,nil
 }
 
 func (h *Host) Output(cmd string) (string, error) {
